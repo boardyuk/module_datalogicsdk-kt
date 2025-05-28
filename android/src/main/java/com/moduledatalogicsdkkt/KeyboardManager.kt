@@ -20,7 +20,7 @@ class KeyboardManager(reactContext: ReactApplicationContext) : ReactContextBaseJ
 
   private var keyboardManager: KeyboardManager? = null
 
-  init{
+  init {
     keyboardManager = KeyboardManager()
   }
 
@@ -29,18 +29,18 @@ class KeyboardManager(reactContext: ReactApplicationContext) : ReactContextBaseJ
   }
 
   /**********************************************************************
-  * Purpose:        Gets all the available triggers on the device.
-  * Precondition:   N/A
-  * Postcondition:  Returns an object of objects, with one for each trigger.
-  *                 They will have the following fields:
-  *                 { "enabled":boolean, "id":number, "name":string }
-  ************************************************************************/
+   * Purpose:        Gets all the available triggers on the device.
+   * Precondition:   N/A
+   * Postcondition:  Returns an object of objects, with one for each trigger.
+   *                 They will have the following fields:
+   *                 { "enabled":boolean, "id":number, "name":string }
+   ************************************************************************/
   @ReactMethod
   fun getAllAvailableTriggers(promise: Promise) {
     try {
       val triggersList: List<Trigger> = keyboardManager!!.availableTriggers
       val triggersObjArray = WritableNativeArray()
-      for(t in triggersList) {
+      for (t in triggersList) {
         val map = WritableNativeMap()
         map.putBoolean("enabled", t.isEnabled)
         map.putInt("id", t.id)
@@ -55,18 +55,18 @@ class KeyboardManager(reactContext: ReactApplicationContext) : ReactContextBaseJ
   }
 
   /**********************************************************************
-  * Purpose:        Sets all the available triggers on the device.
-  * Precondition:   Is passed in a boolean
-  * Postcondition:  All available triggers are either set to true or false.
-  ************************************************************************/
+   * Purpose:        Sets all the available triggers on the device.
+   * Precondition:   Is passed in a boolean
+   * Postcondition:  All available triggers are either set to true or false.
+   ************************************************************************/
   @ReactMethod
   fun setAllAvailableTriggers(enable: Boolean, promise: Promise) {
     var successFlag = true
     try {
       val triggersList: List<Trigger> = keyboardManager!!.availableTriggers
-      for(t in triggersList) {
+      for (t in triggersList) {
         t.isEnabled = enable
-        if(t.isEnabled != enable) {
+        if (t.isEnabled != enable) {
           successFlag = false
         }
       }
@@ -78,13 +78,13 @@ class KeyboardManager(reactContext: ReactApplicationContext) : ReactContextBaseJ
   }
 
   /**********************************************************************
-  * Purpose:        Set one or more triggers on or off.
-  * Precondition:   Is passed in a object of objects, with  each object
-  *                 containing the following fields:
-  *                 { enabled: boolean, id: number, name: string }
-  * Postcondition:  Triggers are set to the passed in values, and a success
-  *                 flag is returned.
-  ************************************************************************/
+   * Purpose:        Set one or more triggers on or off.
+   * Precondition:   Is passed in a object of objects, with  each object
+   *                 containing the following fields:
+   *                 { enabled: boolean, id: number, name: string }
+   * Postcondition:  Triggers are set to the passed in values, and a success
+   *                 flag is returned.
+   ************************************************************************/
   @ReactMethod
   fun setTriggers(array: ReadableArray, promise: Promise) {
     try {
@@ -92,24 +92,32 @@ class KeyboardManager(reactContext: ReactApplicationContext) : ReactContextBaseJ
       val triggersMap: HashMap<Int, Boolean> = HashMap<Int, Boolean>()
 
       val arraySize: Int = array.size()
-      for(i: Int in 0 until arraySize) {
-        val id: Int = array.getMap(i).getInt("id")
-        val enabled: Boolean = array.getMap(i).getBoolean("enabled")
-        triggersMap.put(id, enabled)
+      for (i: Int in 0 until arraySize) {
+        // Safely get the map and check for null
+        val map = array.getMap(i)
+        if (map != null) {
+          // Use safe calls to get values, with default fallbacks if needed
+          val id: Int = map.getInt("id")
+          val enabled: Boolean = map.getBoolean("enabled")
+          triggersMap.put(id, enabled)
+        } else {
+          // Handle the case where the map is null (optional: log or set successFlag to false)
+          successFlag = false
+        }
       }
 
       val triggersList: List<Trigger> = keyboardManager!!.availableTriggers
-      for(t in triggersList) {
-        if( triggersMap.containsKey(t.id)) {
+      for (t in triggersList) {
+        if (triggersMap.containsKey(t.id)) {
           val tEnabled: Boolean = triggersMap[t.id] ?: false
           t.isEnabled = tEnabled
-          if(t.isEnabled != tEnabled) {
+          if (t.isEnabled != tEnabled) {
             successFlag = false
           }
         }
       }
 
-        promise.resolve(successFlag)
+      promise.resolve(successFlag)
 
     } catch (e: Exception) {
       promise.reject(e)
